@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>صفحة قائد الأسرة</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; margin: 0; padding-top: 20px; }
+        .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 450px; text-align: center; }
+        .balance-box { font-size: 24px; font-weight: bold; margin: 20px 0; color: #28a745; }
+        .input-group { margin-bottom: 15px; text-align: right; }
+        input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .error-message { color: #dc3545; font-size: 12px; display: none; margin-top: 5px; }
+        .success-message { color: #28a745; font-size: 12px; display: none; margin-top: 5px; }
+        button { width: 100%; padding: 10px; margin-top: 10px; background-color: #0056b3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #004494; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #0056b3; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        .buy-btn { background-color: #28a745; padding: 5px 10px; width: auto; font-size: 12px; margin: 0; }
+        .buy-btn:hover { background-color: #218838; }
+        .alert-box { background-color: #fff3cd; color: #856404; padding: 10px; margin-top: 15px; border-radius: 4px; display: none; font-size: 14px; border: 1px solid #ffeeba; }
+        .family-title { margin-bottom: 5px; margin-top: 15px; color: #0056b3; font-size: 18px; text-align: right; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
+
+        footer { margin-top: auto; padding: 20px; text-align: center; width: 100%; }
+        footer a { margin: 0 10px; text-decoration: none; color: #555; }
+        footer a:hover { color: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>لوحة تحكم القائد (الحُماة)</h2>
+        <p>الرصيد المالي للأسرة:</p>
+        <div class="balance-box" id="balance">جاري التحميل...</div>
+
+        <div class="input-group">
+            <input type="number" id="amount" placeholder="المبلغ المراد تحويله للإدارة">
+            <div id="amount-error" class="error-message">الرجاء إدخال مبلغ صحيح أكبر من الصفر</div>
+            <div id="amount-success" class="success-message">تم التحويل بنجاح!</div>
+        </div>
+        <button onclick="transferToAdmin()" id="transfer-btn">تحويل للإدارة</button>
+
+        <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
+
+        <h3>سوق الانتقالات</h3>
+        <div id="pending-alert" class="alert-box">لديك طلب شراء قيد الانتظار لدى الإدارة. لا يمكنك تقديم طلب جديد حتى يتم الرد عليه.</div>
+        <div id="market-error" class="error-message" style="display: none; text-align: center; font-size: 14px;"></div>
+        
+        <div id="market-container" style="display: none;"></div>
+        <div id="market-closed-msg" style="display:none; color:#555; margin-top:15px;">السوق مغلق حالياً.</div>
+    </div>
+
+    <footer>
+        <a href="#">Telegram</a> | <a href="#">Instagram</a> | <a href="#">X (Twitter)</a>
+    </footer>
+
+    <script>
+        if (sessionStorage.getItem('isLoggedIn') !== 'true' || sessionStorage.getItem('role') !== 'leader' || sessionStorage.getItem('family') !== 'homa') {
+            window.location.href = 'index.html';
+        }
+
+        const webAppUrl = 'https://script.google.com/macros/s/AKfycbydBokwwgdDI33xr_0dd-wRzQZNqNXcLCa4O5Ow2bX_DzH0vVBLBxtqP3VSVV9Xfy_cVg/exec';
+        const familyName = 'homa';
+        const userToken = sessionStorage.getItem('token');
+
+        const familyNamesAr = {
+            'koma': 'الكُماة',
+            'roma': 'الرُماة',
+            'homa': 'الحُماة'
+        };
+
+        window.onload = function() {
+            fetchBalance();
+            fetchMarket();
+            
+            setInterval(fetchBalance, 15000);
+            setInterval(fetchMarket, 15000);
+        };
+
+        function fetchBalance() {
+            fetch(webAppUrl, { method: 'POST', body: JSON.stringify({ action: 'getBalance', family: familyName, token: userToken }) })
+            .then(res => res.json()).then(data => {
+                if (data.success) document.getElementById('balance').innerText = data.balance;
+            });
+        }
+
+        function fetchMarket() {
+            fetch(webAppUrl, { method: 'POST', body: JSON.stringify({ action: 'getMarketData', family: familyName, token: userToken }) })
+            .then(res => res.json()).then(data => {
+                if (data.success) {
+                    if (data.marketOpen) {
+                        document.getElementById('market-container').style.display = 'block';
+                        document.getElementById('market-closed-msg').style.display = 'none';
+                        const container = document.getElementById('market-container');
+                        container.innerHTML = '';
+                        
+                        if (data.hasPending) {
+                            document.getElementById('pending-alert').style.display = 'block';
+                        } else {
+                            document.getElementById('pending-alert').style.display = 'none';
+                        }
+                        
+                        if(data.players.length === 0) {
+                            container.innerHTML = '<p>لا يوجد لاعبين متاحين</p>';
+                            return;
+                        }
+
+                        const groupedPlayers = {};
+                        data.players.forEach(p => {
+                            if (!groupedPlayers[p.family]) groupedPlayers[p.family] = [];
+                            groupedPlayers[p.family].push(p);
+                        });
+
+                        Object.keys(groupedPlayers).forEach(fam => {
+                            const famTitle = familyNamesAr[fam] || fam;
+                            let tableHtml = `<div class="family-title">أسرة ${famTitle}</div>`;
+                            tableHtml += `<table><thead><tr><th>الاسم</th><th>السعر (النقاط)</th><th>إجراء</th></tr></thead><tbody>`;
+                            
+                            groupedPlayers[fam].forEach(p => {
+                                const btnHtml = data.hasPending ? 
+                                    `<button class="buy-btn" disabled>مغلق</button>` : 
+                                    `<button class="buy-btn" onclick="buyPlayer('${p.name}', ${p.points})">شراء</button>`;
+                                tableHtml += `<tr><td>${p.name}</td><td>${p.points}</td><td>${btnHtml}</td></tr>`;
+                            });
+                            
+                            tableHtml += `</tbody></table>`;
+                            container.innerHTML += tableHtml;
+                        });
+
+                    } else {
+                        document.getElementById('market-container').style.display = 'none';
+                        document.getElementById('market-closed-msg').style.display = 'block';
+                        document.getElementById('pending-alert').style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        function buyPlayer(playerName, price) {
+            const isConfirmed = confirm('هل أنت متأكد من شراء "' + playerName + '"؟');
+            if (!isConfirmed) return;
+
+            const errorMsg = document.getElementById('market-error');
+            errorMsg.style.display = 'none';
+            
+            fetch(webAppUrl, { method: 'POST', body: JSON.stringify({ action: 'buyPlayer', family: familyName, player: playerName, price: price, token: userToken }) })
+            .then(res => res.json()).then(data => {
+                if (data.success) {
+                    fetchMarket(); 
+                } else {
+                    errorMsg.innerText = data.message;
+                    errorMsg.style.display = 'block';
+                }
+            });
+        }
+
+        function transferToAdmin() {
+            const amountInput = document.getElementById('amount').value;
+            const amountError = document.getElementById('amount-error');
+            const amountSuccess = document.getElementById('amount-success');
+            amountError.style.display = 'none'; amountSuccess.style.display = 'none';
+            
+            if (!amountInput || amountInput <= 0) { amountError.style.display = 'block'; return; }
+            
+            fetch(webAppUrl, { method: 'POST', body: JSON.stringify({ action: 'transfer', family: familyName, amount: amountInput, token: userToken }) })
+            .then(res => res.json()).then(data => {
+                if (data.success) {
+                    document.getElementById('balance').innerText = data.newBalance;
+                    amountSuccess.style.display = 'block';
+                    document.getElementById('amount').value = '';
+                } else {
+                    amountError.innerText = data.message || 'الرصيد غير كافٍ';
+                    amountError.style.display = 'block';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

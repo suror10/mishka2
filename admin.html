@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>لوحة الإدارة</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; margin: 0; padding-top: 20px; }
+        .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 750px; max-width: 95%; text-align: center; margin-bottom: 20px; }
+        .balances-wrapper { display: flex; justify-content: space-around; margin: 20px 0; padding: 10px; background: #e9ecef; border-radius: 8px; }
+        .balance-item { font-size: 14px; font-weight: bold; }
+        .balance-item span { display: block; font-size: 18px; color: #0056b3; margin-top: 5px; }
+        .input-group { margin-bottom: 15px; text-align: right; width: 50%; margin-left: auto; margin-right: auto; }
+        select, input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .error-message { color: #dc3545; font-size: 12px; display: none; margin-top: 5px; }
+        .success-message { color: #28a745; font-size: 12px; display: none; margin-top: 5px; }
+        button { padding: 10px 20px; margin-top: 10px; background-color: #0056b3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        button:hover { background-color: #004494; }
+        button.action-btn { background-color: #28a745; width: 50%; font-size: 16px; }
+        button.action-btn:hover { background-color: #218838; }
+        button.danger-btn { background-color: #dc3545; }
+        button.danger-btn:hover { background-color: #c82333; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #0056b3; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        
+        .tables-container { display: flex; gap: 20px; justify-content: space-between; margin-top: 20px; flex-wrap: wrap; }
+        .table-wrapper { flex: 1; min-width: 30%; }
+
+        footer { margin-top: auto; padding: 20px; text-align: center; width: 100%; }
+        footer a { margin: 0 10px; text-decoration: none; color: #555; }
+        footer a:hover { color: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>لوحة تحكم الإدارة</h2>
+        
+        <div class="balances-wrapper">
+            <div class="balance-item">البنك <span id="admin-balance">...</span></div>
+            <div class="balance-item">الكُماة <span id="koma-balance">...</span></div>
+            <div class="balance-item">الرُماة <span id="roma-balance">...</span></div>
+            <div class="balance-item">الحُماة <span id="homa-balance">...</span></div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
+
+        <h3>إضافة مبلغ لأسرة</h3>
+        
+        <div class="input-group">
+            <select id="family-select">
+                <option value="">اختر الأسرة...</option>
+                <option value="koma">الكُماة</option>
+                <option value="roma">الرُماة</option>
+                <option value="homa">الحُماة</option>
+            </select>
+            <div id="family-error" class="error-message">الرجاء اختيار الأسرة</div>
+        </div>
+
+        <div class="input-group">
+            <input type="number" id="amount" placeholder="المبلغ المراد إضافته">
+            <div id="amount-error" class="error-message">الرجاء إدخال مبلغ صحيح أكبر من الصفر</div>
+            <div id="amount-success" class="success-message">تم إضافة المبلغ بنجاح!</div>
+        </div>
+
+        <button onclick="addFunds()" class="action-btn" id="add-btn">إضافة المبلغ</button>
+
+        <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
+
+        <h3>إدارة سوق الانتقالات</h3>
+        <div style="display: flex; justify-content: space-around; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <h4>سوق أسرة الكُماة</h4>
+                <button onclick="toggleMarket('koma', true)" style="background-color:#0056b3; width: auto; padding: 5px 10px; margin: 2px;">نشر</button>
+                <button onclick="toggleMarket('koma', false)" class="danger-btn" style="width: auto; padding: 5px 10px; margin: 2px;">إخفاء</button>
+            </div>
+            <div>
+                <h4>سوق أسرة الرُماة</h4>
+                <button onclick="toggleMarket('roma', true)" style="background-color:#0056b3; width: auto; padding: 5px 10px; margin: 2px;">نشر</button>
+                <button onclick="toggleMarket('roma', false)" class="danger-btn" style="width: auto; padding: 5px 10px; margin: 2px;">إخفاء</button>
+            </div>
+            <div>
+                <h4>سوق أسرة الحُماة</h4>
+                <button onclick="toggleMarket('homa', true)" style="background-color:#0056b3; width: auto; padding: 5px 10px; margin: 2px;">نشر</button>
+                <button onclick="toggleMarket('homa', false)" class="danger-btn" style="width: auto; padding: 5px 10px; margin: 2px;">إخفاء</button>
+            </div>
+        </div>
+        <div id="market-success" class="success-message">تم تحديث حالة السوق بنجاح!</div>
+
+        <h4>طلبات الشراء المعلقة</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>تفاصيل الانتقال</th>
+                    <th>اللاعب المطلوب</th>
+                    <th>السعر (النقاط)</th>
+                    <th>القرار</th>
+                </tr>
+            </thead>
+            <tbody id="requests-body">
+                <tr><td colspan="4">جاري تحميل الطلبات...</td></tr>
+            </tbody>
+        </table>
+
+        <h4>سجل الانتقالات المقبولة</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>تاريخ الشراء</th>
+                    <th>الانتقال</th>
+                    <th>اللاعب</th>
+                    <th>السعر</th>
+                </tr>
+            </thead>
+            <tbody id="transfer-history-body">
+                <tr><td colspan="4">جاري تحميل السجل...</td></tr>
+            </tbody>
+        </table>
+
+        <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
+
+        <h3>نقاط الأعضاء</h3>
+        <div class="tables-container">
+            <div class="table-wrapper">
+                <h4>أسرة الكُماة</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>النقاط</th>
+                        </tr>
+                    </thead>
+                    <tbody id="koma-points-body">
+                        <tr><td colspan="2">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="table-wrapper">
+                <h4>أسرة الرُماة</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>النقاط</th>
+                        </tr>
+                    </thead>
+                    <tbody id="roma-points-body">
+                        <tr><td colspan="2">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-wrapper">
+                <h4>أسرة الحُماة</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>النقاط</th>
+                        </tr>
+                    </thead>
+                    <tbody id="homa-points-body">
+                        <tr><td colspan="2">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- <footer>
+        <a href="#">Telegram</a> | <a href="#">Instagram</a> | <a href="#">X (Twitter)</a>
+    </footer> -->
+
+    <script>
+        if (sessionStorage.getItem('isLoggedIn') !== 'true' || sessionStorage.getItem('role') !== 'admin') {
+            window.location.href = 'index.html';
+        }
+
+        const webAppUrl = 'https://script.google.com/macros/s/AKfycbydBokwwgdDI33xr_0dd-wRzQZNqNXcLCa4O5Ow2bX_DzH0vVBLBxtqP3VSVV9Xfy_cVg/exec';
+        const userToken = sessionStorage.getItem('token');
+
+        const familyNames = {
+            'koma': 'الكُماة',
+            'roma': 'الرُماة',
+            'homa': 'الحُماة'
+        };
+
+        window.onload = function() {
+            fetchAllBalances();
+            fetchMembersPoints();
+            fetchPendingRequests();
+            fetchTransferHistory();
+
+            setInterval(fetchPendingRequests, 10000);
+            setInterval(fetchBalances, 10000);
+            setInterval(fetchMembersPoints, 10000);
+        };
+
+        function fetchAllBalances() {
+            fetchBalance('admin', 'admin-balance');
+            fetchBalance('koma', 'koma-balance');
+            fetchBalance('roma', 'roma-balance');
+            fetchBalance('homa', 'homa-balance');
+        }
+
+        function fetchBalances() {
+            fetchAllBalances();
+        }
+
+        function fetchBalance(familyName, elementId) {
+            fetch(webAppUrl, { method: 'POST', body: JSON.stringify({ action: 'getBalance', family: familyName, token: userToken }) })
+            .then(res => res.json()).then(data => { if (data.success) document.getElementById(elementId).innerText = data.balance; });
+        }
+
+        function fetchMembersPoints() {
+            fetch(webAppUrl, { method: 'POST', body: JSON.stringify({ action: 'getMembersPoints', token: userToken }) })
+            .then(res => res.json()).then(data => {
+                if (data.success) {
+                    if(data.koma) populatePointsTable('koma-points-body', data.koma);
+                    if(data.roma) populatePointsTable('roma-points-body', data.roma);
+                    if(data.homa) populatePointsTable('homa-points-body', data.homa);
+                }
+            });
+        }
+
+        function populatePointsTable(elementId, membersList) {
+            const tbody = document.getElementById(elementId);
+            tbody.innerHTML = '';
+            if (!membersList || membersList.length === 0) { tbody.innerHTML = '<tr><td colspan="2">لا يوجد أعضاء</td></tr>'; return; }
+            membersList.forEach(m => tbody.innerHTML += `<tr><td>${m.name}</td><td>${m.points}</td></tr>`);
+        }
+
+        function toggleMarket(targetFam, status) {
+            document.getElementById('market-success').style.display = 'none';
+            fetch(webAppUrl, { method: 'POST', body: JSON.stringify({ action: 'toggleMarket', targetFamily: targetFam, status: status, token: userToken }) })
+            .then(res => res.json()).then(data => {
+                if (data.success) document.getElementById('market-success').style.display = 'block';
+            });
+        }
+
+        function fetchPendingRequests() {
+            fetch(webAppUrl, { method: 'POST', body: JSON.stringify({ action: 'getPendingRequests', token: userToken }) })
+            .then(res => res.json()).then(data => {
+                const tbody = document.getElementById('requests-body');
+                tbody.innerHTML = '';
+                if (data.success && data.requests.length > 0) {
+                    data.requests.forEach(req => {
+                        const buyerName = familyNames[req.family] || req.family;
+                        const sellerName = req.seller ? (familyNames[req.seller] || req.seller) : 'أسرة أخرى';
+                        const transferText = req.seller ? `${sellerName} -> ${buyerName}` : `إلى ${buyerName}`;
+
+                        tbody.innerHTML += `<tr>
+                            <td>${transferText}</td>
+                            <td>${req.player}</td>
+                            <td>${req.price}</td>
+                            <td>
+                                <button onclick="resolveReq(${req.row}, 'approve')" style="background-color:#28a745; margin:0 2px;">قبول</button>
+                                <button onclick="resolveReq(${req.row}, 'reject')" style="background-color:#dc3545; margin:0 2px;">رفض</button>
+                            </td>
+                        </tr>`;
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4">لا توجد طلبات معلقة</td></tr>';
+                }
+            });
+        }
+
+        function fetchTransferHistory() {
+            fetch(webAppUrl, { method: 'POST', body: JSON.stringify({ action: 'getTransferHistory', token: userToken }) })
+            .then(res => res.json()).then(data => {
+                const tbody = document.getElementById('transfer-history-body');
+                tbody.innerHTML = '';
+                if (data.success && data.history.length > 0) {
+                    data.history.forEach(hist => {
+                        const dateObj = new Date(hist.date);
+                        const formattedDate = dateObj.toLocaleString('ar-SA');
+                        
+                        const buyerName = familyNames[hist.buyer] || hist.buyer;
+                        const sellerName = hist.seller ? (familyNames[hist.seller] || hist.seller) : 'أسرة أخرى';
+                        const transferText = hist.seller ? `${sellerName} -> ${buyerName}` : `إلى ${buyerName}`;
+
+                        tbody.innerHTML += `<tr>
+                            <td>${formattedDate}</td>
+                            <td>${transferText}</td>
+                            <td>${hist.player}</td>
+                            <td>${hist.price}</td>
+                        </tr>`;
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="4">لا توجد انتقالات مقبولة حتى الآن</td></tr>';
+                }
+            });
+        }
+
+        function resolveReq(row, status) {
+            fetch(webAppUrl, { method: 'POST', body: JSON.stringify({ action: 'resolveRequest', row: row, reqStatus: status, token: userToken }) })
+            .then(res => res.json()).then(data => {
+                if (data.success) {
+                    fetchPendingRequests();
+                    fetchTransferHistory();
+                    fetchAllBalances();
+                    fetchMembersPoints();
+                }
+            });
+        }
+
+        function addFunds() {
+            const familySelect = document.getElementById('family-select').value;
+            const amountInput = document.getElementById('amount').value;
+            const familyError = document.getElementById('family-error');
+            const amountError = document.getElementById('amount-error');
+            const amountSuccess = document.getElementById('amount-success');
+            
+            familyError.style.display = 'none'; amountError.style.display = 'none'; amountSuccess.style.display = 'none';
+            let isValid = true;
+            if (!familySelect) { familyError.style.display = 'block'; isValid = false; }
+            if (!amountInput || amountInput <= 0) { amountError.style.display = 'block'; isValid = false; }
+            if (!isValid) return;
+
+            fetch(webAppUrl, { method: 'POST', body: JSON.stringify({ action: 'updateBalance', family: familySelect, amount: amountInput, token: userToken }) })
+            .then(res => res.json()).then(data => {
+                if (data.success) {
+                    amountSuccess.style.display = 'block';
+                    document.getElementById('amount').value = '';
+                    document.getElementById('family-select').value = '';
+                    fetchAllBalances(); 
+                } else {
+                    amountError.innerText = 'حدث خطأ';
+                    amountError.style.display = 'block';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

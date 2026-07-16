@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>نظام إدارة الأسر</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .login-box { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 300px; text-align: center; }
+        .input-group { margin-bottom: 15px; text-align: right; }
+        input { width: 90%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .error-message { color: #dc3545; font-size: 12px; display: none; margin-top: 5px; }
+        button { width: 90%; padding: 10px; margin-top: 10px; background-color: #0056b3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #004494; }
+        footer { margin-top: auto; padding: 20px; text-align: center; width: 100%; }
+        footer a { margin: 0 10px; text-decoration: none; color: #555; }
+        footer a:hover { color: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+        <h2>تسجيل الدخول</h2>
+        
+        <div class="input-group">
+            <input type="text" id="username" placeholder="اسم المستخدم">
+            <div id="username-error" class="error-message">الرجاء إدخال اسم المستخدم</div>
+        </div>
+        
+        <div class="input-group">
+            <input type="password" id="password" placeholder="كلمة المرور">
+            <div id="password-error" class="error-message">الرجاء إدخال كلمة المرور</div>
+        </div>
+        
+        <button onclick="handleLogin()">دخول</button>
+    </div>
+
+    <!-- <footer>
+        <a href="#">Telegram</a> | <a href="#">Instagram</a> | <a href="#">X (Twitter)</a>
+    </footer> -->
+
+  <script>
+        function handleLogin() {
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const userError = document.getElementById('username-error');
+            const passError = document.getElementById('password-error');
+
+            userError.style.display = 'none';
+            passError.style.display = 'none';
+            passError.innerText = 'الرجاء إدخال كلمة المرور';
+
+            let isValid = true;
+            if (!user) { userError.style.display = 'block'; isValid = false; }
+            if (!pass) { passError.style.display = 'block'; isValid = false; }
+            if (isValid) authenticateUser(user, pass);
+        }
+
+    function authenticateUser(user, pass) {
+            const webAppUrl = 'https://script.google.com/macros/s/AKfycbydBokwwgdDI33xr_0dd-wRzQZNqNXcLCa4O5Ow2bX_DzH0vVBLBxtqP3VSVV9Xfy_cVg/exec';
+            
+            fetch(webAppUrl, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'login', username: user, password: pass })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    sessionStorage.setItem('isLoggedIn', 'true');
+                    sessionStorage.setItem('role', data.role);
+                    sessionStorage.setItem('family', data.family);
+                    sessionStorage.setItem('token', data.token);
+                    sessionStorage.setItem('points', data.points);
+
+                    if (data.role === 'admin') window.location.href = 'admin.html';
+                    else if (data.role === 'leader' && data.family === 'koma') window.location.href = 'koma_leader.html';
+                    else if (data.role === 'member' && data.family === 'koma') window.location.href = 'koma_member.html';
+                    else if (data.role === 'leader' && data.family === 'roma') window.location.href = 'roma_leader.html';
+                    else if (data.role === 'member' && data.family === 'roma') window.location.href = 'roma_member.html';
+                    else if (data.role === 'leader' && data.family === 'homa') window.location.href = 'homa_leader.html';
+                    else if (data.role === 'member' && data.family === 'homa') window.location.href = 'homa_member.html';
+                } else {
+                    const passError = document.getElementById('password-error');
+                    passError.innerText = 'بيانات الدخول غير صحيحة';
+                    passError.style.display = 'block';
+                }
+            })
+            .catch(error => alert('خطأ في الاتصال بالخادم'));
+        }
+    </script>
+</body>
+</html>

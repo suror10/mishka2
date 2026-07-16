@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>صفحة أفراد الأسرة</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; margin: 0; padding-top: 20px; }
+        .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 450px; text-align: center; }
+        .balance-box { font-size: 32px; font-weight: bold; margin: 10px 0 20px 0; color: #0056b3; }
+        .points-box { font-size: 32px; font-weight: bold; margin: 10px 0 20px 0; color: #ff9800; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #0056b3; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        
+        footer { margin-top: auto; padding: 20px; text-align: center; width: 100%; }
+        footer a { margin: 0 10px; text-decoration: none; color: #555; }
+        footer a:hover { color: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>مرحباً بك في أسرتك (الكُماة)</h2>
+        
+        <p>الرصيد المالي الحالي للأسرة:</p>
+        <div class="balance-box" id="balance">جاري التحميل...</div>
+
+        <p>نقاطك الشخصية:</p>
+        <div class="points-box" id="personal-points">جاري التحميل...</div>
+
+        <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
+
+        <h3>سوق الانتقالات</h3>
+        <table id="market-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th>الاسم</th>
+                    <th>السعر (النقاط)</th>
+                </tr>
+            </thead>
+            <tbody id="market-body">
+            </tbody>
+        </table>
+        <div id="market-closed-msg" style="display:none; color:#555; margin-top:15px;">السوق مغلق حالياً.</div>
+    </div>
+
+    <footer>
+        <a href="#">Telegram</a> | <a href="#">Instagram</a> | <a href="#">X (Twitter)</a>
+    </footer>
+
+    <script>
+        if (sessionStorage.getItem('isLoggedIn') !== 'true' || sessionStorage.getItem('role') !== 'member' || sessionStorage.getItem('family') !== 'koma') {
+            window.location.href = 'index.html';
+        }
+
+        const webAppUrl = 'https://script.google.com/macros/s/AKfycbydBokwwgdDI33xr_0dd-wRzQZNqNXcLCa4O5Ow2bX_DzH0vVBLBxtqP3VSVV9Xfy_cVg/exec';
+        const familyName = 'koma';
+        const userToken = sessionStorage.getItem('token');
+
+        window.onload = function() {
+            document.getElementById('personal-points').innerText = sessionStorage.getItem('points') || '0';
+            fetchBalance();
+            fetchMarket();
+            
+            setInterval(fetchBalance, 15000);
+            setInterval(fetchMarket, 15000);
+        };
+
+        function fetchBalance() {
+            fetch(webAppUrl, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'getBalance', family: familyName, token: userToken })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('balance').innerText = data.balance;
+                } else {
+                    document.getElementById('balance').innerText = 'خطأ في جلب الرصيد';
+                }
+            })
+            .catch(error => {
+                document.getElementById('balance').innerText = 'خطأ في الاتصال';
+            });
+        }
+
+        function fetchMarket() {
+            fetch(webAppUrl, { method: 'POST', body: JSON.stringify({ action: 'getMarketData', family: familyName, token: userToken }) })
+            .then(res => res.json()).then(data => {
+                if (data.success) {
+                    if (data.marketOpen) {
+                        document.getElementById('market-table').style.display = 'table';
+                        document.getElementById('market-closed-msg').style.display = 'none';
+                        const tbody = document.getElementById('market-body');
+                        tbody.innerHTML = '';
+                        
+                        data.players.forEach(p => {
+                            tbody.innerHTML += `<tr><td>${p.name}</td><td>${p.points}</td></tr>`;
+                        });
+                        if(data.players.length === 0) tbody.innerHTML = '<tr><td colspan="2">لا يوجد لاعبين متاحين</td></tr>';
+                    } else {
+                        document.getElementById('market-table').style.display = 'none';
+                        document.getElementById('market-closed-msg').style.display = 'block';
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
