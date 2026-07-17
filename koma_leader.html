@@ -34,6 +34,8 @@
     <div class="container">
         <h2>لوحة تحكم القائد (الكُماة)</h2>
         <p>الرصيد المالي للأسرة:</p>
+        <p>نقاطك الشخصية:</p>
+        <div class="points-box" id="personal-points" style="color: #ff9800; font-size: 24px; font-weight: bold; margin-bottom: 20px;">جاري التحميل...</div>
         <div class="balance-box" id="balance">جاري التحميل...</div>
 
         <div class="input-group">
@@ -73,6 +75,7 @@
         };
 
         window.onload = function() {
+            document.getElementById('personal-points').innerText = sessionStorage.getItem('points') || '0';
             fetchBalance();
             fetchMarket();
             
